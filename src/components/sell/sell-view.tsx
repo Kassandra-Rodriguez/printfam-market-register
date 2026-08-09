@@ -280,7 +280,7 @@ export function SellView({
       {(categories.length > 0 || colors.length > 0) && (
         <div className={`grid gap-2 ${categories.length > 0 && colors.length > 0 ? "grid-cols-2" : "grid-cols-1"}`}>
           {categories.length > 0 && (
-            <Select value={category ?? "all"} onValueChange={(v) => setCategory(v === "all" ? null : v)}>
+            <Select value={category ?? "Category"} onValueChange={(v) => setCategory(v === "all" ? null : v)}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
@@ -295,7 +295,7 @@ export function SellView({
             </Select>
           )}
           {colors.length > 0 && (
-            <Select value={color ?? "all"} onValueChange={(v) => setColor(v === "all" ? null : v)}>
+            <Select value={color ?? "Colors"} onValueChange={(v) => setColor(v === "all" ? null : v)}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Color" />
               </SelectTrigger>
