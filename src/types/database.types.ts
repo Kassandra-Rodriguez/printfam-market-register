@@ -213,6 +213,7 @@ export interface Database {
           low_stock_threshold: number | null;
           status: ItemStatus;
           has_variants: boolean;
+          variant_label: string | null;
           created_by: string;
           updated_by: string;
           created_at: string;
@@ -233,6 +234,7 @@ export interface Database {
           low_stock_threshold?: number | null;
           status?: ItemStatus;
           has_variants?: boolean;
+          variant_label?: string | null;
           created_by: string;
           updated_by: string;
         },
@@ -247,6 +249,9 @@ export interface Database {
           cost?: number;
           low_stock_threshold?: number | null;
           status?: ItemStatus;
+          has_variants?: boolean;
+          variant_label?: string | null;
+          quantity?: number;
           updated_by?: string;
         }
       >;

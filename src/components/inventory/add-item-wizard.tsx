@@ -75,6 +75,7 @@ export function AddItemWizard({
       ? await createInventoryItemVariants({
           name,
           category,
+          variantLabel,
           sku,
           description,
           imageUrl,

@@ -9,6 +9,7 @@ import {
   adjustInventorySchema,
   addVariantsSchema,
   updateVariantSchema,
+  convertToVariantsSchema,
   UNCATEGORIZED_CATEGORY,
 } from "@/lib/validations/inventory";
 import type { ActionResult } from "@/lib/actions/auth";
@@ -89,6 +90,7 @@ export async function createInventoryItemVariants(
       price: Math.min(...v.variants.map((variant) => variant.price)),
       low_stock_threshold: v.lowStockThreshold ?? null,
       has_variants: true,
+      variant_label: v.variantLabel,
       created_by: context.userId,
       updated_by: context.userId,
     })
@@ -116,6 +118,85 @@ export async function createInventoryItemVariants(
 
   revalidatePath("/inventory");
   return { error: null, itemId: item.id };
+}
+
+export async function convertItemToVariants(
+  itemId: string,
+  values: unknown
+): Promise<ActionResult> {
+  const parsed = convertToVariantsSchema.safeParse(values);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid details." };
+
+  const context = await getCurrentBusinessContext();
+  if (!context) return { error: "You must belong to a business." };
+  if (context.membership.role !== "owner") {
+    return { error: "Only the business owner can add options to an item." };
+  }
+
+  const v = parsed.data;
+  const supabase = await createClient();
+
+  const { data: item, error: fetchError } = await supabase
+    .from("inventory_items")
+    .select("quantity, price, color, has_variants")
+    .eq("id", itemId)
+    .eq("business_id", context.business.id)
+    .maybeSingle();
+
+  if (fetchError) return { error: fetchError.message };
+  if (!item) return { error: "Item not found." };
+  if (item.has_variants) return { error: "This item already has options." };
+
+  // Not wrapped in a single DB transaction (see createInventoryItemVariants above) --
+  // if the variant insert fails, restore the item's original simple-item fields
+  // rather than leave it flagged has_variants with zero variants.
+  const { error: updateError } = await supabase
+    .from("inventory_items")
+    .update({
+      has_variants: true,
+      variant_label: v.variantLabel,
+      quantity: 0,
+      color: "",
+      price: Math.min(...v.variants.map((variant) => variant.price)),
+      updated_by: context.userId,
+    })
+    .eq("id", itemId)
+    .eq("business_id", context.business.id)
+    .eq("has_variants", false);
+
+  if (updateError) return { error: updateError.message };
+
+  const variantRows = v.variants.map((variant) => ({
+    business_id: context.business.id,
+    item_id: itemId,
+    value: variant.value,
+    price: variant.price,
+    quantity: variant.quantity,
+    created_by: context.userId,
+    updated_by: context.userId,
+  }));
+
+  const { error: variantsError } = await supabase.from("inventory_item_variants").insert(variantRows);
+
+  if (variantsError) {
+    await supabase
+      .from("inventory_items")
+      .update({
+        has_variants: false,
+        variant_label: null,
+        quantity: item.quantity,
+        color: item.color,
+        price: item.price,
+        updated_by: context.userId,
+      })
+      .eq("id", itemId)
+      .eq("business_id", context.business.id);
+    return { error: variantsError.message };
+  }
+
+  revalidatePath("/inventory");
+  revalidatePath(`/inventory/${itemId}`);
+  return { error: null };
 }
 
 export async function addVariantToItem(

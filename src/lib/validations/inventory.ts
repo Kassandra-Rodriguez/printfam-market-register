@@ -33,6 +33,7 @@ export type EditInventoryItemValues = z.infer<typeof editInventoryItemSchema>;
 export const addVariantsSchema = z.object({
   name: z.string().trim().min(1, "Enter an item name"),
   category: z.string().trim().min(1, "Enter a type or category"),
+  variantLabel: z.string().trim().min(1, "Enter an option name"),
   sku: z.string().trim().optional(),
   description: z.string().trim().optional(),
   imageUrl: z.string().trim().nullable().optional(),
@@ -49,6 +50,20 @@ export const addVariantsSchema = z.object({
     .min(1, "Add at least one variant"),
 });
 export type AddVariantsValues = z.infer<typeof addVariantsSchema>;
+
+export const convertToVariantsSchema = z.object({
+  variantLabel: z.string().trim().min(1, "Enter an option name"),
+  variants: z
+    .array(
+      z.object({
+        value: z.string().trim().min(1, "Enter a value"),
+        price: z.number().min(0, "Price cannot be negative"),
+        quantity: z.number().int().min(0, "Quantity cannot be negative"),
+      })
+    )
+    .min(1, "Add at least one option"),
+});
+export type ConvertToVariantsValues = z.infer<typeof convertToVariantsSchema>;
 
 export const updateVariantSchema = z.object({
   value: z.string().trim().min(1, "Enter a value"),

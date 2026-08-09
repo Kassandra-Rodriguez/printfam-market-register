@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shared/page-header";
 import { ItemActions } from "@/components/inventory/item-actions";
 import { VariantManager } from "@/components/inventory/variant-manager";
+import { ConvertToVariantsDialog } from "@/components/inventory/convert-to-variants-dialog";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { format } from "date-fns";
@@ -119,7 +120,19 @@ export default async function InventoryItemPage({
           isOwner={isOwner}
           canAdjust={canAdjust}
           isArchived={item.status === "archived"}
+          variantLabel={item.variant_label}
         />
+      )}
+
+      {!item.has_variants && isOwner && item.status !== "archived" && (
+        <div className="mb-6">
+          <ConvertToVariantsDialog
+            itemId={item.id}
+            initialValue={item.color ?? ""}
+            initialPrice={item.price}
+            initialQuantity={item.quantity}
+          />
+        </div>
       )}
 
       <div className="mb-6">

@@ -49,6 +49,7 @@ export function VariantManager({
   isOwner,
   canAdjust,
   isArchived,
+  variantLabel,
 }: {
   itemId: string;
   variants: Variant[];
@@ -56,22 +57,24 @@ export function VariantManager({
   isOwner: boolean;
   canAdjust: boolean;
   isArchived: boolean;
+  variantLabel?: string | null;
 }) {
   const router = useRouter();
   const [addOpen, setAddOpen] = React.useState(false);
   const [editTarget, setEditTarget] = React.useState<Variant | null>(null);
+  const label = variantLabel || "Value";
 
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Variants</h2>
+        <h2 className="text-sm font-semibold">{variantLabel || "Variants"}</h2>
         {isOwner && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger render={<Button size="sm" variant="outline" />}>
-              <Plus /> Add variant
+              <Plus /> Add {label.toLowerCase()}
             </DialogTrigger>
             <DialogContent>
-              <AddVariantForm itemId={itemId} onDone={() => setAddOpen(false)} />
+              <AddVariantForm itemId={itemId} label={label} onDone={() => setAddOpen(false)} />
             </DialogContent>
           </Dialog>
         )}
@@ -131,6 +134,7 @@ export function VariantManager({
             <EditVariantForm
               itemId={itemId}
               variant={editTarget}
+              label={label}
               onDone={() => {
                 setEditTarget(null);
                 router.refresh();
@@ -143,7 +147,15 @@ export function VariantManager({
   );
 }
 
-function AddVariantForm({ itemId, onDone }: { itemId: string; onDone: () => void }) {
+function AddVariantForm({
+  itemId,
+  label,
+  onDone,
+}: {
+  itemId: string;
+  label: string;
+  onDone: () => void;
+}) {
   const router = useRouter();
   const [value, setValue] = React.useState("");
   const [price, setPrice] = React.useState(0);
@@ -169,10 +181,10 @@ function AddVariantForm({ itemId, onDone }: { itemId: string; onDone: () => void
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <DialogHeader>
-        <DialogTitle>Add variant</DialogTitle>
+        <DialogTitle>Add {label.toLowerCase()}</DialogTitle>
       </DialogHeader>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="variant-value">Value</Label>
+        <Label htmlFor="variant-value">{label}</Label>
         <Input
           id="variant-value"
           placeholder="e.g. Red, Large"
@@ -221,10 +233,12 @@ function AddVariantForm({ itemId, onDone }: { itemId: string; onDone: () => void
 function EditVariantForm({
   itemId,
   variant,
+  label,
   onDone,
 }: {
   itemId: string;
   variant: Variant;
+  label: string;
   onDone: () => void;
 }) {
   const [value, setValue] = React.useState(variant.value);
@@ -249,10 +263,10 @@ function EditVariantForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <DialogHeader>
-        <DialogTitle>Edit variant</DialogTitle>
+        <DialogTitle>Edit {label.toLowerCase()}</DialogTitle>
       </DialogHeader>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="edit-variant-value">Value</Label>
+        <Label htmlFor="edit-variant-value">{label}</Label>
         <Input
           id="edit-variant-value"
           value={value}
