@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { CategoryCombobox } from "@/components/inventory/category-combobox";
 import {
   Form,
   FormControl,
@@ -38,11 +39,13 @@ export function InventoryItemForm({
   mode,
   itemId,
   businessId,
+  categories,
   defaultValues,
 }: {
   mode: "create" | "edit";
   itemId?: string;
   businessId: string;
+  categories: string[];
   defaultValues?: Partial<FormValues>;
 }) {
   const router = useRouter();
@@ -124,7 +127,12 @@ export function InventoryItemForm({
               <FormItem>
                 <FormLabel>Type / category</FormLabel>
                 <FormControl>
-                  <Input placeholder="Toy" className="h-12 text-base" {...field} />
+                  <CategoryCombobox
+                    placeholder="Toy"
+                    value={field.value}
+                    onChange={field.onChange}
+                    categories={categories}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

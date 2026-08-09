@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { CategoryCombobox } from "@/components/inventory/category-combobox";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Package, Layers, Plus, Trash2, Loader2 } from "lucide-react";
 
@@ -19,7 +20,13 @@ const STEP_OPTIONS = 1;
 const STEP_PRICING = 2;
 const STEP_VARIANTS = 3;
 
-export function AddItemWizard({ businessId }: { businessId: string }) {
+export function AddItemWizard({
+  businessId,
+  categories,
+}: {
+  businessId: string;
+  categories: string[];
+}) {
   const router = useRouter();
   const [step, setStep] = React.useState(STEP_PHOTO);
   const [submitting, setSubmitting] = React.useState(false);
@@ -141,12 +148,12 @@ export function AddItemWizard({ businessId }: { businessId: string }) {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="wiz-category">Type / category</Label>
-            <Input
+            <CategoryCombobox
               id="wiz-category"
               placeholder="Toy"
-              className="h-12 text-base"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={setCategory}
+              categories={categories}
             />
           </div>
           <Button

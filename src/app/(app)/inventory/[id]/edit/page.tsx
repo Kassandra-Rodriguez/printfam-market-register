@@ -24,6 +24,12 @@ export default async function EditInventoryItemPage({
 
   if (!item) notFound();
 
+  const { data: rows } = await supabase
+    .from("inventory_items")
+    .select("category")
+    .eq("business_id", context.business.id);
+  const categories = Array.from(new Set((rows ?? []).map((r) => r.category).filter(Boolean))).sort();
+
   return (
     <div className="mx-auto max-w-lg px-4 py-4 md:py-6">
       <PageHeader title="Edit item" backHref={`/inventory/${id}`} />
@@ -31,6 +37,7 @@ export default async function EditInventoryItemPage({
         mode="edit"
         itemId={item.id}
         businessId={context.business.id}
+        categories={categories}
         defaultValues={{
           name: item.name,
           category: item.category,
