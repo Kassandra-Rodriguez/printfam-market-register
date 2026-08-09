@@ -4,6 +4,8 @@ A mobile-first inventory and event sales tracker for small businesses selling at
 
 Built with Next.js (App Router), Supabase (Auth + Postgres + Row Level Security + Realtime + Storage), Tailwind CSS, and shadcn/ui.
 
+Deploys to production automatically on every push to `main` via the Vercel + GitHub integration.
+
 ## Tech stack
 
 - Next.js 16 (App Router, TypeScript strict, Turbopack)
