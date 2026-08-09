@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const UNCATEGORIZED_CATEGORY = "Uncategorized";
+
 export const ADJUSTMENT_TYPES = [
   { value: "stock_added", label: "Stock added", noteRequired: false },
   { value: "manual_correction", label: "Manual correction", noteRequired: false },

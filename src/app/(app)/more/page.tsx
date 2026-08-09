@@ -9,6 +9,7 @@ import {
   ChevronRight,
   LogOut,
   BarChart3,
+  Tags,
 } from "lucide-react";
 
 function Row({
@@ -81,6 +82,12 @@ export default async function MorePage() {
               icon={Users}
               label="Employees"
               description="Invite and manage your team"
+            />
+            <Row
+              href="/more/categories"
+              icon={Tags}
+              label="Categories"
+              description="Rename or remove product categories"
             />
           </>
         )}

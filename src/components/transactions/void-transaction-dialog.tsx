@@ -30,7 +30,13 @@ import {
 } from "@/components/ui/form";
 import { Loader2, Ban } from "lucide-react";
 
-export function VoidTransactionDialog({ transactionId }: { transactionId: string }) {
+export function VoidTransactionDialog({
+  transactionId,
+  compact = false,
+}: {
+  transactionId: string;
+  compact?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const form = useForm<VoidTransactionValues>({
@@ -52,10 +58,20 @@ export function VoidTransactionDialog({ transactionId }: { transactionId: string
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="outline" className="h-11 w-full text-destructive hover:text-destructive" />
+          compact ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0 text-muted-foreground hover:text-destructive"
+              aria-label="Void transaction"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            />
+          ) : (
+            <Button variant="outline" className="h-11 w-full text-destructive hover:text-destructive" />
+          )
         }
       >
-        <Ban /> Void transaction
+        {compact ? <Ban className="size-4" /> : (<><Ban /> Void transaction</>)}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

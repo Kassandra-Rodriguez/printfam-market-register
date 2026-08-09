@@ -9,6 +9,7 @@ import {
   adjustInventorySchema,
   addVariantsSchema,
   updateVariantSchema,
+  UNCATEGORIZED_CATEGORY,
 } from "@/lib/validations/inventory";
 import type { ActionResult } from "@/lib/actions/auth";
 
@@ -270,6 +271,51 @@ export async function setItemsArchived(itemIds: string[], archived: boolean): Pr
 
   if (error) return { error: error.message };
   revalidatePath("/inventory");
+  return { error: null };
+}
+
+export async function renameCategory(oldName: string, newName: string): Promise<ActionResult> {
+  const trimmed = newName.trim();
+  if (!trimmed) return { error: "Enter a category name." };
+
+  const context = await getCurrentBusinessContext();
+  if (!context) return { error: "You must belong to a business." };
+  if (context.membership.role !== "owner") {
+    return { error: "Only the business owner can manage categories." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ category: trimmed, updated_by: context.userId })
+    .eq("business_id", context.business.id)
+    .eq("category", oldName);
+
+  if (error) return { error: error.message };
+  revalidatePath("/inventory");
+  revalidatePath("/more/categories");
+  revalidatePath("/sell");
+  return { error: null };
+}
+
+export async function removeCategory(name: string): Promise<ActionResult> {
+  const context = await getCurrentBusinessContext();
+  if (!context) return { error: "You must belong to a business." };
+  if (context.membership.role !== "owner") {
+    return { error: "Only the business owner can manage categories." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ category: UNCATEGORIZED_CATEGORY, updated_by: context.userId })
+    .eq("business_id", context.business.id)
+    .eq("category", name);
+
+  if (error) return { error: error.message };
+  revalidatePath("/inventory");
+  revalidatePath("/more/categories");
+  revalidatePath("/sell");
   return { error: null };
 }
 

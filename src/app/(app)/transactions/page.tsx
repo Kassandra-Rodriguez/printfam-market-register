@@ -4,6 +4,7 @@ import { getCurrentBusinessContext } from "@/lib/business-context";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { VoidTransactionDialog } from "@/components/transactions/void-transaction-dialog";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/currency";
 import { format } from "date-fns";
@@ -40,6 +41,18 @@ export default async function TransactionsPage({
   const codeById = new Map((paymentMethods ?? []).map((pm) => [pm.id, pm.code]));
   const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
 
+  const isOwner = context.membership.role === "owner";
+  const { settings, userId } = context;
+  function canVoid(t: NonNullable<typeof transactions>[number]) {
+    const withinWindow =
+      new Date().getTime() - new Date(t.occurred_at).getTime() <= settings.void_window_minutes * 60_000;
+    return (
+      t.status === "completed" &&
+      (isOwner ||
+        (settings.employees_can_void_own_recent_transactions && t.employee_id === userId && withinWindow))
+    );
+  }
+
   return (
     <div className="mx-auto max-w-lg px-4 py-4 md:py-6">
       <PageHeader title="Transactions" backHref={eventId ? `/events/${eventId}` : undefined} />
@@ -49,31 +62,33 @@ export default async function TransactionsPage({
       ) : (
         <div className="divide-y overflow-hidden rounded-xl border bg-card">
           {transactions.map((t) => (
-            <Link
-              key={t.id}
-              href={`/transactions/${t.id}`}
-              className="flex items-center justify-between gap-3 px-4 py-3 active:bg-muted"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">
-                  {nameById.get(t.employee_id) ?? "Unknown"}
-                  <span className="ml-2 font-normal text-muted-foreground">
-                    {PAYMENT_LABELS[codeById.get(t.payment_method_id) ?? ""] ?? ""}
+            <div key={t.id} className="flex items-center gap-1 px-2 py-1">
+              <Link
+                href={`/transactions/${t.id}`}
+                className="flex flex-1 items-center justify-between gap-3 rounded-lg px-2 py-2 active:bg-muted"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">
+                    {nameById.get(t.employee_id) ?? "Unknown"}
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {PAYMENT_LABELS[codeById.get(t.payment_method_id) ?? ""] ?? ""}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(t.occurred_at), "MMM d, h:mm a")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`font-semibold tabular-nums ${t.status === "voided" ? "text-muted-foreground line-through" : ""}`}
+                  >
+                    {formatCurrency(t.total, context.business.default_currency)}
                   </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {format(new Date(t.occurred_at), "MMM d, h:mm a")}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span
-                  className={`font-semibold tabular-nums ${t.status === "voided" ? "text-muted-foreground line-through" : ""}`}
-                >
-                  {formatCurrency(t.total, context.business.default_currency)}
-                </span>
-                {t.status === "voided" && <Badge variant="destructive">Voided</Badge>}
-              </div>
-            </Link>
+                  {t.status === "voided" && <Badge variant="destructive">Voided</Badge>}
+                </div>
+              </Link>
+              {canVoid(t) && <VoidTransactionDialog transactionId={t.id} compact />}
+            </div>
           ))}
         </div>
       )}

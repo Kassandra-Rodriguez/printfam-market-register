@@ -9,7 +9,7 @@ import { ProductTile } from "@/components/sell/product-tile";
 import { CartSheet } from "@/components/sell/cart-sheet";
 import { VariantPickerSheet } from "@/components/sell/variant-picker-sheet";
 import { EmptyState } from "@/components/shared/empty-state";
-import { completeSale } from "@/lib/actions/sales";
+import { completeSale, voidTransaction } from "@/lib/actions/sales";
 import { formatCurrency } from "@/lib/currency";
 import { useRealtimeInventory } from "@/hooks/use-realtime-inventory";
 import { useRealtimeVariants } from "@/hooks/use-realtime-variants";
@@ -240,7 +240,26 @@ export function SellView({
     setCart({});
     setNote("");
     setSheetOpen(false);
-    toast.success("Sale complete", { description: formatCurrency(subtotal, currency) });
+    const transactionId = result.transactionId;
+    toast.success("Sale complete", {
+      description: formatCurrency(subtotal, currency),
+      action: transactionId
+        ? {
+            label: "Undo",
+            onClick: () => handleUndo(transactionId),
+          }
+        : undefined,
+    });
+    router.refresh();
+  }
+
+  async function handleUndo(transactionId: string) {
+    const result = await voidTransaction(transactionId, { reason: "Undone right after sale" });
+    if (result.error) {
+      toast.error("Couldn't undo that sale", { description: result.error });
+      return;
+    }
+    toast.success("Sale undone", { description: "Inventory has been restored." });
     router.refresh();
   }
 
