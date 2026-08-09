@@ -85,9 +85,12 @@ export function SellView({
   );
   // Groups variant values (and simple items' color) by their dimension label --
   // e.g. "Color" and "Size" show as separate filters instead of one generic list.
+  // Scoped to the selected category so picking "CardKits" only offers the
+  // option types that category actually has, not every option storewide.
   const filterDimensions = React.useMemo(() => {
     const byLabel = new Map<string, Set<string>>();
-    for (const item of items) {
+    const scoped = category ? items.filter((i) => i.category === category) : items;
+    for (const item of scoped) {
       if (item.has_variants) {
         const label = item.variant_label || "Color";
         const set = byLabel.get(label) ?? new Set<string>();
@@ -102,10 +105,15 @@ export function SellView({
     return Array.from(byLabel.entries())
       .map(([label, values]) => ({ label, values: Array.from(values).sort() }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [items, variantsByItem]);
+  }, [items, variantsByItem, category]);
 
   function itemDimensionLabel(item: InventoryItem) {
     return item.has_variants ? item.variant_label || "Color" : "Color";
+  }
+
+  function handleCategoryChange(value: string | null) {
+    setCategory(!value || value === "all" ? null : value);
+    setOptionFilters({});
   }
 
   const filtered = items.filter((item) => {
@@ -299,7 +307,7 @@ export function SellView({
           }`}
         >
           {categories.length > 0 && (
-            <Select value={category ?? "Category"} onValueChange={(v) => setCategory(v === "all" ? null : v)}>
+            <Select value={category ?? "Category"} onValueChange={handleCategoryChange}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>

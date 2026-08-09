@@ -120,6 +120,31 @@ export async function createInventoryItemVariants(
   return { error: null, itemId: item.id };
 }
 
+export async function updateVariantLabel(itemId: string, label: string): Promise<ActionResult> {
+  const trimmed = label.trim();
+  if (!trimmed) return { error: "Enter an option name." };
+
+  const context = await getCurrentBusinessContext();
+  if (!context) return { error: "You must belong to a business." };
+  if (context.membership.role !== "owner") {
+    return { error: "Only the business owner can rename an item's options." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ variant_label: trimmed, updated_by: context.userId })
+    .eq("id", itemId)
+    .eq("business_id", context.business.id)
+    .eq("has_variants", true);
+
+  if (error) return { error: error.message };
+  revalidatePath("/inventory");
+  revalidatePath(`/inventory/${itemId}`);
+  revalidatePath("/sell");
+  return { error: null };
+}
+
 export async function convertItemToVariants(
   itemId: string,
   values: unknown

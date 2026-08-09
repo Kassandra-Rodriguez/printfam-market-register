@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { addVariantToItem, updateVariant, deleteVariant } from "@/lib/actions/inventory";
+import { addVariantToItem, updateVariant, deleteVariant, updateVariantLabel } from "@/lib/actions/inventory";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreVertical, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Plus, MoreVertical, SlidersHorizontal, Loader2, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database.types";
 
@@ -62,12 +62,27 @@ export function VariantManager({
   const router = useRouter();
   const [addOpen, setAddOpen] = React.useState(false);
   const [editTarget, setEditTarget] = React.useState<Variant | null>(null);
+  const [renameOpen, setRenameOpen] = React.useState(false);
   const label = variantLabel || "Value";
 
   return (
     <div className="mb-6">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">{variantLabel || "Variants"}</h2>
+        <div className="flex items-center gap-1">
+          <h2 className="text-sm font-semibold">{variantLabel || "Variants"}</h2>
+          {isOwner && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-6"
+              aria-label="Rename option"
+              onClick={() => setRenameOpen(true)}
+            >
+              <Pencil className="size-3.5" />
+            </Button>
+          )}
+        </div>
         {isOwner && (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger render={<Button size="sm" variant="outline" />}>
@@ -79,6 +94,15 @@ export function VariantManager({
           </Dialog>
         )}
       </div>
+
+      {isOwner && (
+        <RenameLabelDialog
+          itemId={itemId}
+          currentLabel={variantLabel ?? ""}
+          open={renameOpen}
+          onOpenChange={setRenameOpen}
+        />
+      )}
 
       <div className="flex flex-col gap-2">
         {variants.length === 0 && (
@@ -290,6 +314,84 @@ function EditVariantForm({
       <DialogFooter>
         <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
         <Button type="submit" disabled={submitting || !value.trim()}>
+          {submitting && <Loader2 className="size-4 animate-spin" />}
+          Save
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+function RenameLabelDialog({
+  itemId,
+  currentLabel,
+  open,
+  onOpenChange,
+}: {
+  itemId: string;
+  currentLabel: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        {open && (
+          <RenameLabelForm itemId={itemId} currentLabel={currentLabel} onDone={() => onOpenChange(false)} />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RenameLabelForm({
+  itemId,
+  currentLabel,
+  onDone,
+}: {
+  itemId: string;
+  currentLabel: string;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [label, setLabel] = React.useState(currentLabel);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const result = await updateVariantLabel(itemId, label);
+    setSubmitting(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    toast.success("Option renamed");
+    router.refresh();
+    onDone();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <DialogHeader>
+        <DialogTitle>Rename this option</DialogTitle>
+      </DialogHeader>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="rename-variant-label">Option name</Label>
+        <Input
+          id="rename-variant-label"
+          autoFocus
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Color, Size, Type..."
+        />
+      </div>
+      {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+      <DialogFooter>
+        <DialogClose render={<Button type="button" variant="outline" />}>Cancel</DialogClose>
+        <Button type="submit" disabled={submitting || !label.trim()}>
           {submitting && <Loader2 className="size-4 animate-spin" />}
           Save
         </Button>

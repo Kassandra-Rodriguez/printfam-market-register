@@ -72,7 +72,7 @@ export function ReportFilterBar({
             <SelectValue placeholder="Event" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All events</SelectItem>
+            <SelectItem value="Events">All events</SelectItem>
             {events.map((e) => (
               <SelectItem key={e.id} value={e.id}>
                 {e.name}
@@ -85,7 +85,7 @@ export function ReportFilterBar({
             <SelectValue placeholder="Employee" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All employees</SelectItem>
+            <SelectItem value="Employees">All employees</SelectItem>
             {employees.map((e) => (
               <SelectItem key={e.id} value={e.id}>
                 {e.name}
@@ -98,7 +98,7 @@ export function ReportFilterBar({
             <SelectValue placeholder="Payment" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All payments</SelectItem>
+            <SelectItem value="Payment Types">All payments</SelectItem>
             <SelectItem value="cash">Cash</SelectItem>
             <SelectItem value="cashapp">Cash App</SelectItem>
             <SelectItem value="card">Card</SelectItem>
