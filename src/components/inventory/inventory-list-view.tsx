@@ -3,7 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +45,7 @@ export function InventoryListView({
   const [status, setStatus] = React.useState<"active" | "archived">("active");
   const [search, setSearch] = React.useState("");
   const [category, setCategory] = React.useState<string | null>(null);
-  const [color, setColor] = React.useState<string | null>(null);
+  const [optionFilters, setOptionFilters] = React.useState<Record<string, string | null>>({});
   const [lowStockOnly, setLowStockOnly] = React.useState(false);
   const [selectMode, setSelectMode] = React.useState(false);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
@@ -114,31 +114,42 @@ export function InventoryListView({
     () => Array.from(new Set(items.map((i) => i.category).filter(Boolean))).sort(),
     [items]
   );
-  const colors = React.useMemo(
-    () =>
-      Array.from(
-        new Set(
-          items.flatMap((i) =>
-            i.has_variants
-              ? (variantsByItem.get(i.id) ?? []).map((v) => v.value)
-              : i.color
-                ? [i.color]
-                : []
-          )
-        )
-      ).sort(),
-    [items, variantsByItem]
-  );
+  // Groups variant values (and simple items' color) by their dimension label --
+  // e.g. "Color" and "Size" show as separate filters instead of one generic list.
+  const filterDimensions = React.useMemo(() => {
+    const byLabel = new Map<string, Set<string>>();
+    for (const item of items) {
+      if (item.has_variants) {
+        const label = item.variant_label || "Color";
+        const set = byLabel.get(label) ?? new Set<string>();
+        for (const v of variantsByItem.get(item.id) ?? []) set.add(v.value);
+        byLabel.set(label, set);
+      } else if (item.color) {
+        const set = byLabel.get("Color") ?? new Set<string>();
+        set.add(item.color);
+        byLabel.set("Color", set);
+      }
+    }
+    return Array.from(byLabel.entries())
+      .map(([label, values]) => ({ label, values: Array.from(values).sort() }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [items, variantsByItem]);
+
+  function itemDimensionLabel(item: InventoryItem) {
+    return item.has_variants ? item.variant_label || "Color" : "Color";
+  }
 
   const filtered = items.filter((item) => {
     if (item.status !== status) return false;
     if (category && item.category !== category) return false;
     const itemVariants = variantsByItem.get(item.id) ?? [];
-    if (color) {
-      const matchesColor = item.has_variants
-        ? itemVariants.some((v) => v.value === color)
-        : item.color === color;
-      if (!matchesColor) return false;
+    for (const [label, value] of Object.entries(optionFilters)) {
+      if (!value) continue;
+      if (itemDimensionLabel(item) !== label) return false;
+      const matches = item.has_variants
+        ? itemVariants.some((v) => v.value === value)
+        : item.color === value;
+      if (!matches) return false;
     }
     const quantity = quantityOf(item);
     if (lowStockOnly && !(item.low_stock_threshold != null && quantity <= item.low_stock_threshold)) {
@@ -206,25 +217,47 @@ export function InventoryListView({
         />
       </div>
 
-      {(categories.length > 0 || colors.length > 0) && (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {categories.map((c) => (
-            <button
-              key={c}
-              onClick={() => setCategory(category === c ? null : c)}
-              className="shrink-0"
+      {(categories.length > 0 || filterDimensions.length > 0) && (
+        <div
+          className={`grid gap-2 ${
+            categories.length > 0 && filterDimensions.length > 0 ? "grid-cols-2" : "grid-cols-1"
+          }`}
+        >
+          {categories.length > 0 && (
+            <Select value={category ?? "Category"} onValueChange={(v) => setCategory(v === "all" ? null : v)}>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {filterDimensions.map((dim) => (
+            <Select
+              key={dim.label}
+              value={optionFilters[dim.label] ?? dim.label}
+              onValueChange={(v) =>
+                setOptionFilters((prev) => ({ ...prev, [dim.label]: v === "all" ? null : v }))
+              }
             >
-              <Badge variant={category === c ? "default" : "secondary"} className="cursor-pointer">
-                {c}
-              </Badge>
-            </button>
-          ))}
-          {colors.map((c) => (
-            <button key={c} onClick={() => setColor(color === c ? null : c)} className="shrink-0">
-              <Badge variant={color === c ? "default" : "outline"} className="cursor-pointer capitalize">
-                {c}
-              </Badge>
-            </button>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder={dim.label} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All {dim.label.toLowerCase()}s</SelectItem>
+                {dim.values.map((v) => (
+                  <SelectItem key={v} value={v} className={dim.label === "Color" ? "capitalize" : undefined}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ))}
         </div>
       )}
