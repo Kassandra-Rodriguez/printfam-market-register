@@ -1,0 +1,42 @@
+import { type EmailOtpType } from "@supabase/supabase-js";
+import { redirect } from "next/navigation";
+import { type NextRequest } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+// Every Supabase auth email (signup confirmation, password recovery, email
+// change, employee invite) links here first. The email link itself only
+// carries a one-time credential -- clicking it does not create a session by
+// itself. This route exchanges that credential for a real session (so
+// cookies get set) and only then redirects on to the page the user actually
+// wants. Supabase's default templates use a `token_hash`+`type` pair; some
+// flows instead land here with a PKCE `code` -- handle both.
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const token_hash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as EmailOtpType | null;
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/";
+
+  const supabase = await createClient();
+
+  if (token_hash && type) {
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+    if (!error) {
+      redirect(next);
+    }
+    console.error("[auth/confirm] verifyOtp failed", { type, error: error.message });
+  } else if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      redirect(next);
+    }
+    console.error("[auth/confirm] exchangeCodeForSession failed", { error: error.message });
+  } else {
+    console.error(
+      "[auth/confirm] missing token_hash/type and code",
+      Object.fromEntries(searchParams.entries())
+    );
+  }
+
+  redirect(`/login?error=${encodeURIComponent("That link is invalid or has expired.")}`);
+}
