@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductTile } from "@/components/sell/product-tile";
 import { CartSheet } from "@/components/sell/cart-sheet";
 import { VariantPickerSheet } from "@/components/sell/variant-picker-sheet";
@@ -278,21 +278,37 @@ export function SellView({
       </div>
 
       {(categories.length > 0 || colors.length > 0) && (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {categories.map((c) => (
-            <button key={c} onClick={() => setCategory(category === c ? null : c)} className="shrink-0">
-              <Badge variant={category === c ? "default" : "secondary"} className="cursor-pointer">
-                {c}
-              </Badge>
-            </button>
-          ))}
-          {colors.map((c) => (
-            <button key={c} onClick={() => setColor(color === c ? null : c)} className="shrink-0">
-              <Badge variant={color === c ? "default" : "outline"} className="cursor-pointer capitalize">
-                {c}
-              </Badge>
-            </button>
-          ))}
+        <div className={`grid gap-2 ${categories.length > 0 && colors.length > 0 ? "grid-cols-2" : "grid-cols-1"}`}>
+          {categories.length > 0 && (
+            <Select value={category ?? "all"} onValueChange={(v) => setCategory(v === "all" ? null : v)}>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {colors.length > 0 && (
+            <Select value={color ?? "all"} onValueChange={(v) => setColor(v === "all" ? null : v)}>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder="Color" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All colors</SelectItem>
+                {colors.map((c) => (
+                  <SelectItem key={c} value={c} className="capitalize">
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       )}
 
