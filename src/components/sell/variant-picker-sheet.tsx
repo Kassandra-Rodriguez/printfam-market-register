@@ -2,11 +2,14 @@
 
 import {
   Sheet,
+  SheetClose,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/database.types";
@@ -75,6 +78,11 @@ export function VariantPickerSheet({
             <p className="py-8 text-center text-sm text-muted-foreground">No variants set up.</p>
           )}
         </div>
+        <SheetFooter className="border-t pt-3">
+          <SheetClose render={<Button size="lg" className="h-11 w-full" />}>
+            Add
+          </SheetClose>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );
