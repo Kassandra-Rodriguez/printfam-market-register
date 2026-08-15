@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, email")
     .eq("id", context.userId)
     .single();
 
@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     >
       <div className="flex min-h-svh flex-col md:pl-60">
         <SideNav />
-        <TopBar fullName={profile?.full_name || context.business.email} />
+        <TopBar fullName={profile?.full_name || profile?.email || context.business.email} />
         <main className="flex-1 pb-20 md:pb-6">{children}</main>
         <BottomNav />
       </div>
