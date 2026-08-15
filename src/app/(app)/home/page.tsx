@@ -54,8 +54,27 @@ export default async function HomePage() {
         .order("occurred_at", { ascending: false })
         .limit(5),
       supabase.from("payment_methods").select("id, code"),
-      supabase.from("profiles").select("id, full_name"),
+      supabase.from("profiles").select("id, full_name, email"),
     ]);
+
+  const recentTxIds = (recentTx ?? []).map((t) => t.id);
+  const { data: recentTxItems } = recentTxIds.length
+    ? await supabase
+        .from("transaction_items")
+        .select("transaction_id, item_name, quantity")
+        .in("transaction_id", recentTxIds)
+    : { data: [] };
+
+  const itemsSummaryByTx = new Map<string, string>();
+  for (const line of recentTxItems ?? []) {
+    const label = `${line.quantity}x ${line.item_name}`;
+    itemsSummaryByTx.set(
+      line.transaction_id,
+      itemsSummaryByTx.has(line.transaction_id)
+        ? `${itemsSummaryByTx.get(line.transaction_id)}, ${label}`
+        : label
+    );
+  }
 
   const { from, to } = todayRange(business.timezone);
   const todayRecap = await getRecap({ businessId: business.id, from, to });
@@ -66,14 +85,18 @@ export default async function HomePage() {
   ).length;
 
   const codeById = new Map((paymentMethods ?? []).map((pm) => [pm.id, pm.code]));
-  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
-  const recentSales: RecentSale[] = (recentTx ?? []).map((t) => ({
-    id: t.id,
-    total: t.total,
-    occurred_at: t.occurred_at,
-    employeeName: nameById.get(t.employee_id) ?? "Unknown",
-    paymentLabel: PAYMENT_LABELS[codeById.get(t.payment_method_id) ?? ""] ?? "",
-  }));
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const recentSales: RecentSale[] = (recentTx ?? []).map((t) => {
+    const profile = profileById.get(t.employee_id);
+    return {
+      id: t.id,
+      total: t.total,
+      occurred_at: t.occurred_at,
+      employeeName: profile?.full_name || profile?.email || "Unknown",
+      paymentLabel: PAYMENT_LABELS[codeById.get(t.payment_method_id) ?? ""] ?? "",
+      itemsSummary: itemsSummaryByTx.get(t.id) ?? "",
+    };
+  });
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-4 md:py-6">

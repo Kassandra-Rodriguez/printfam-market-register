@@ -10,6 +10,7 @@ export type RecentSale = {
   occurred_at: string;
   employeeName: string;
   paymentLabel: string;
+  itemsSummary: string;
 };
 
 export function RecentSalesList({ sales, currency }: { sales: RecentSale[]; currency: string }) {
@@ -29,6 +30,9 @@ export function RecentSalesList({ sales, currency }: { sales: RecentSale[]; curr
         >
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{sale.employeeName}</p>
+            {sale.itemsSummary && (
+              <p className="truncate text-xs text-muted-foreground">{sale.itemsSummary}</p>
+            )}
             <p className="truncate text-xs text-muted-foreground">
               {sale.paymentLabel} · {format(new Date(sale.occurred_at), "h:mm a")}
             </p>

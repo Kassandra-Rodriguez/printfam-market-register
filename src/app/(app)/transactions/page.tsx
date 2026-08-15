@@ -35,11 +35,11 @@ export default async function TransactionsPage({
   const [{ data: transactions }, { data: paymentMethods }, { data: profiles }] = await Promise.all([
     query,
     supabase.from("payment_methods").select("id, code"),
-    supabase.from("profiles").select("id, full_name"),
+    supabase.from("profiles").select("id, full_name, email"),
   ]);
 
   const codeById = new Map((paymentMethods ?? []).map((pm) => [pm.id, pm.code]));
-  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
   const isOwner = context.membership.role === "owner";
   const { settings, userId } = context;
@@ -69,7 +69,9 @@ export default async function TransactionsPage({
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">
-                    {nameById.get(t.employee_id) ?? "Unknown"}
+                    {profileById.get(t.employee_id)?.full_name ||
+                      profileById.get(t.employee_id)?.email ||
+                      "Unknown"}
                     <span className="ml-2 font-normal text-muted-foreground">
                       {PAYMENT_LABELS[codeById.get(t.payment_method_id) ?? ""] ?? ""}
                     </span>
