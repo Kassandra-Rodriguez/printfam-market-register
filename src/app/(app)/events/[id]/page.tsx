@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { RecapStats } from "@/components/shared/recap-stats";
 import { EventStatusBadge } from "@/components/events/event-status-badge";
 import { EventActions } from "@/components/events/event-actions";
+import { DeleteEventDialog } from "@/components/events/delete-event-dialog";
 import { LiveRefresh } from "@/components/shared/live-refresh";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency";
@@ -70,8 +71,11 @@ export default async function EventDetailPage({
 
       {event.notes && <p className="mb-4 text-sm">{event.notes}</p>}
 
-      <div className="mb-4">
+      <div className="mb-4 space-y-2">
         <EventActions eventId={event.id} status={event.status} canManage={canManage} />
+        {event.status === "closed" && context.membership.role === "owner" && (
+          <DeleteEventDialog eventId={event.id} />
+        )}
       </div>
 
       <div className="mb-4">

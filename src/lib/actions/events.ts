@@ -79,6 +79,37 @@ export async function reopenEvent(eventId: string): Promise<ActionResult> {
   return { error: null };
 }
 
+export async function deleteEvent(eventId: string): Promise<ActionResult> {
+  const context = await getCurrentBusinessContext();
+  if (!context) return { error: "You must belong to a business." };
+  if (context.membership.role !== "owner") {
+    return { error: "Only the business owner can delete events." };
+  }
+
+  const supabase = await createClient();
+  const { error, count } = await supabase
+    .from("events")
+    .delete({ count: "exact" })
+    .eq("id", eventId)
+    .eq("business_id", context.business.id)
+    .eq("status", "closed");
+
+  if (error) {
+    if (error.code === "23503") {
+      return {
+        error: "This event has sales or a cash count recorded and can't be deleted.",
+      };
+    }
+    return { error: error.message };
+  }
+  if (!count) {
+    return { error: "Only closed events can be deleted." };
+  }
+
+  revalidatePath("/events");
+  return { error: null };
+}
+
 export async function recordCashCount(
   eventId: string,
   startingCash: number,
