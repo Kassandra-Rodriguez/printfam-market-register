@@ -2,7 +2,7 @@
 // faster and gives a clear "you're offline" page for navigation -- it does
 // NOT queue sales for later. A sale is only ever shown as complete once the
 // server confirms it, so writes intentionally require a live connection.
-const CACHE_NAME = "market-register-shell-v1";
+const CACHE_NAME = "market-register-shell-v2";
 const SHELL_ASSETS = ["/manifest.json", "/offline.html", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -29,7 +29,16 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/offline.html").then((res) => res || Response.error()))
+      fetch(request).catch(() =>
+        caches.match("/offline.html").then(
+          (res) =>
+            res ||
+            new Response(
+              "<!doctype html><title>Offline</title><p>You're offline. Reconnect and try again.</p>",
+              { status: 503, headers: { "Content-Type": "text/html" } }
+            )
+        )
+      )
     );
     return;
   }
